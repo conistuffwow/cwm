@@ -9,6 +9,12 @@ type Window struct {
 	Width, Height int
 	Title         string
 	Focused       bool
+
+	Dragging    bool
+	DragOffsetX int
+	DragOffsetY int
+
+	Resizing bool
 }
 
 func NewWindow(x, y, w, h int, title string) *Window {
@@ -49,4 +55,47 @@ func (w *Window) Draw(s tcell.Screen) { // this shit was ANNOYING to code.
 		}
 	}
 	// all of that ^^ requires a STUPID amount of math.
+}
+
+func (w *Window) InTitlebar(x, y int) bool {
+	return y == w.Y && x >= w.X && x < w.X+w.Width
+}
+
+func (w *Window) InResizeCorner(x, y int) bool {
+	return x == w.X+w.Width-1 && y == w.Y+w.Height-1
+}
+
+func (w *Window) StartDrag(x, y int) {
+	w.Dragging = true
+	w.DragOffsetX = x - w.X
+	w.DragOffsetY = y - w.Y
+}
+
+func (w *Window) DragTo(mouseX, mouseY int) {
+	if w.Dragging {
+		w.X = mouseX - w.DragOffsetX
+		w.Y = mouseY - w.DragOffsetY
+	}
+}
+func (w *Window) EndDrag() {
+	w.Dragging = false
+}
+func (w *Window) StartResize() {
+	w.Resizing = true
+}
+func (w *Window) ResizeTo(mouseX, mouseY int) {
+	if w.Resizing {
+		w.Width = mouseX - w.X + 1
+		w.Height = mouseY - w.Y + 1
+		if w.Width < 5 { // minimum width
+			w.Width = 5
+		}
+		if w.Height < 3 { // minimum height
+			w.Height = 3
+		}
+	}
+}
+
+func (w *Window) EndResize() {
+	w.Resizing = false
 }

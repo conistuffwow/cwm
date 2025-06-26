@@ -3,25 +3,29 @@ package main
 import (
 	"log"
 
+	"github.com/conistuffwow/cwm/util"
 	"github.com/conistuffwow/cwm/wm"
 	"github.com/gdamore/tcell/v2"
 )
 
 func main() {
 	screen, err := tcell.NewScreen()
+
 	if err != nil {
 		log.Fatalf("Failed to create screen: %v", err)
 	}
 	if err := screen.Init(); err != nil {
 		log.Fatalf("Failed to initialize screen: %v", err)
 	}
+	screen.EnableMouse()
 	defer screen.Fini()
 
 	screen.Clear()
 
 	manager := wm.NewManager()
-	manager.AddWindow(wm.NewWindow(5, 3, 20, 10, "First Window"))
-	manager.AddWindow(wm.NewWindow(30, 5, 25, 12, "Second Window"))
+	util.AddWindowWithLayout(manager, screen, "Wnd1")
+	util.AddWindowWithLayout(manager, screen, "Wnd2")
+	util.AddWindowWithLayout(manager, screen, "Wnd3")
 
 	manager.Draw(screen)
 	screen.Show()
@@ -33,12 +37,12 @@ func main() {
 			switch ev.Key() {
 			case tcell.KeyEscape, tcell.KeyCtrlC:
 				return
-			case tcell.KeyTab:
-				manager.FocusNext()
-				screen.Clear()
-				manager.Draw(screen)
-				screen.Show()
 			}
+			manager.HandleEvent(ev, screen)
+
+			screen.Clear()
+			manager.Draw(screen)
+			screen.Show()
 		}
 	}
 
