@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/conistuffwow/cwm/util"
 	"github.com/conistuffwow/cwm/wm"
@@ -23,26 +24,39 @@ func main() {
 	screen.Clear()
 
 	manager := wm.NewManager()
+	manager.SetScreen(screen)
 	util.AddWindowWithLayout(manager, screen, "Wnd1")
 	util.AddWindowWithLayout(manager, screen, "Wnd2")
 	util.AddWindowWithLayout(manager, screen, "Wnd3")
-
 	manager.Draw(screen)
 	screen.Show()
-
+	eventCh := make(chan tcell.Event, 10)
+	go func() {
+		for {
+			ev := screen.PollEvent()
+			eventCh <- ev
+		}
+	}()
+	drawTicker := time.NewTicker(time.Second)
+	defer drawTicker.Stop()
 	for {
-		ev := screen.PollEvent()
-		switch ev := ev.(type) {
-		case *tcell.EventKey:
-			switch ev.Key() {
-			case tcell.KeyEscape, tcell.KeyCtrlC:
-				return
-			}
-			manager.HandleEvent(ev, screen)
-
-			screen.Clear()
-			manager.Draw(screen)
+		select {
+		case <-drawTicker.C:
+			manager.DrawPanel()
 			screen.Show()
+		case ev := <-eventCh:
+			switch ev := ev.(type) {
+			case *tcell.EventKey:
+				switch ev.Key() {
+				case tcell.KeyEscape, tcell.KeyCtrlC:
+					return
+				}
+				manager.HandleEvent(ev, screen)
+				screen.Clear()
+				manager.Draw(screen)
+				manager.DrawPanel()
+				screen.Show()
+			}
 		}
 	}
 
